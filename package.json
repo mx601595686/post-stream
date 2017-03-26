@@ -1,0 +1,39 @@
+{
+  "name": "post-stream",
+  "version": "0.0.1",
+  "description": "post Object,Buffer,Stream to a stream",
+  "main": "./bin/index.js",
+  "types": "./bin/index.d.ts",
+  "scripts": {
+    "test": "gulp test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mx601595686/post-stream.git"
+  },
+  "keywords": [
+    "post",
+    "stream",
+    "json",
+    "buffer",
+    "object"
+  ],
+  "author": "wujingtao",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/mx601595686/post-stream/issues"
+  },
+  "homepage": "https://github.com/mx601595686/post-stream#readme",
+  "devDependencies": {
+    "@types/expect.js": "^0.3.29",
+    "@types/mocha": "^2.2.40",
+    "@types/node": "^7.0.7",
+    "expect.js": "^0.3.1",
+    "gulp": "^3.9.1",
+    "gulp-sourcemaps": "^2.4.1",
+    "gulp-spawn-mocha": "^3.1.0",
+    "gulp-typescript": "^3.1.5",
+    "mocha": "^3.2.0",
+    "typescript": "^2.2.1"
+  }
+}
