@@ -146,8 +146,8 @@ class PostStream extends events.EventEmitter {
     }
     _send(title, data) {
         return __awaiter(this, void 0, void 0, function* () {
+            yield this._queue;
             if (this._writable != null) {
-                yield this._queue;
                 const header = [];
                 // mode
                 if (data[0] instanceof stream.Readable) {
@@ -204,14 +204,16 @@ class PostStream extends events.EventEmitter {
         });
     }
     close() {
-        if (this._writable !== undefined) {
-            this._writable.end();
-            this._writable = undefined;
-        }
-        if (this._writable !== undefined) {
-            this._readable.pause();
-            this._readable = undefined;
-        }
+        this._queue.then(() => {
+            if (this._writable !== undefined) {
+                this._writable.end();
+                this._writable = undefined;
+            }
+            if (this._readable !== undefined) {
+                this._readable.pause();
+                this._readable = undefined;
+            }
+        });
     }
 }
 module.exports = PostStream;

@@ -7,7 +7,6 @@ import { serialize, parse } from './Serialize';
     body format: count->divide[]->item(datatype->data)
 */
 
-
 class PostStream extends events.EventEmitter {
 
     private _readable: stream.Readable | stream.Duplex;
@@ -172,9 +171,10 @@ class PostStream extends events.EventEmitter {
     }
 
     async _send(title: string, data: any[]): Promise<void> {
+        await this._queue;
+
         if (this._writable != null) {
-            await this._queue;
-            
+
             const header: Buffer[] = [];
 
             // mode
@@ -236,15 +236,18 @@ class PostStream extends events.EventEmitter {
         }
     }
 
-    close() {
-        if (this._writable !== undefined) {
-            this._writable.end();
-            this._writable = undefined;
-        }
-        if (this._writable !== undefined) {
-            this._readable.pause();
-            this._readable = undefined;
-        }
+
+    close(): Promise<void> {
+        return this._queue.then(() => {
+            if (this._writable !== undefined) {
+                this._writable.end();
+                this._writable = undefined;
+            }
+            if (this._readable !== undefined) {
+                this._readable.pause();
+                this._readable = undefined;
+            }
+        });
     }
 }
 

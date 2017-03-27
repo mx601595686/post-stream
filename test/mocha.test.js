@@ -45,7 +45,7 @@ describe('test send', function () {
 
     beforeEach(function () {
         child = child_process.spawn(process.execPath, [path.resolve(__dirname, './echo.js')], {
-            stdio: ['pipe', 'pipe', 'pipe', 'pipe']
+            stdio: ['pipe', 'pipe', 'pipe']
         });
         readable = child.stdout;
         writable = child.stdin;
@@ -91,7 +91,7 @@ describe('test data event', function () {
 
     beforeEach(function () {
         child = child_process.spawn(process.execPath, [path.resolve(__dirname, './echo.js')], {
-            stdio: ['pipe', 'pipe', 'pipe', 'pipe']
+            stdio: ['pipe', 'pipe', 'pipe']
         });
         readable = child.stdout;
         writable = child.stdin;
@@ -126,7 +126,7 @@ describe('test data event', function () {
                     break;
                 default:
                     expect(title).to.be('end');
-                    expect(index).to.be(5);
+                    expect(index).to.be(6);
                     done();
                     break;
             }
@@ -165,7 +165,9 @@ describe('test close', function () {
     let child;
 
     beforeEach(function () {
-        child = child_process.fork('./echo.js');
+        child = child_process.spawn(process.execPath, [path.resolve(__dirname, './echo.js')], {
+            stdio: ['pipe', 'pipe', 'pipe']
+        });
         readable = child.stdout;
         writable = child.stdin;
     });
@@ -174,27 +176,63 @@ describe('test close', function () {
         child.kill();
     });
 
-    it('use readable', function () {
-        const ps = new PostStream(readable);
-        ps.close();
-        ps.send();
-        ps.send('test');
-        ps.send('test', 123);
-    });
-
-    it('use writable', function () {
-        const ps = new PostStream(writable);
-        ps.close();
-        ps.send();
-        ps.send('test');
-        ps.send('test', 123);
-    });
-
-    it('use readable and writable', function () {
+    it('test basic type and Buffer', function (done) {
         const ps = new PostStream(readable, writable);
-        ps.close();
+        let index = 1;
+
+        ps.on('data', function (title, ...data) {
+            switch (index++) {
+                case 1:
+                    expect(title).to.be('');
+                    expect(data[0]).to.be(undefined);
+                    break;
+                case 2:
+                    expect(title).to.be('test');
+                    expect(data[0]).to.be(undefined);
+                    break;
+                case 3:
+                    expect(title).to.be('test');
+                    expect(data[0]).to.be(123);
+                    break;
+                default:
+                    throw new Error('close() is no effect');
+                    break;
+            }
+        });
+
         ps.send();
         ps.send('test');
         ps.send('test', 123);
+        ps.close();
+        ps.send('test2', 'a', 1, 3.5, true, null, undefined, { name: 'test' }, Buffer.from('ttt'));
+        ps.send('end');
+
+        setTimeout(function () {
+            expect(index).to.be.above(1);
+            done();
+        }, 1000);
+    });
+
+    it('test stream', function (done) {
+        const ps = new PostStream(readable, writable);
+        let index = 1;
+
+        ps.on('data', function (title, data) {
+            expect(title).to.be('stream');
+            expect(data.toString()).to.be('abcdefghijklmn');
+            if (index++ > 3)
+                throw new Error('close() is no effect');
+        });
+
+        ps.send('stream', fs.createReadStream(path.resolve(__dirname, './testFile.txt')));
+        ps.send('stream', fs.createReadStream(path.resolve(__dirname, './testFile.txt')));
+        ps.send('stream', fs.createReadStream(path.resolve(__dirname, './testFile.txt')));
+        ps.close();
+        ps.send('stream', fs.createReadStream(path.resolve(__dirname, './testFile.txt')));
+        ps.send('stream', fs.createReadStream(path.resolve(__dirname, './testFile.txt')));
+        setTimeout(function () {
+            expect(index).to.be.above(1);
+            done();
+        }, 1000);
     });
 });
