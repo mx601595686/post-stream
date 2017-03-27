@@ -2,8 +2,8 @@
   "name": "post-stream",
   "version": "0.0.1",
   "description": "post Object,Buffer,Stream to a stream",
-  "main": "./bin/index.js",
-  "types": "./bin/index.d.ts",
+  "main": "./bin/PostStream.js",
+  "types": "./bin/PostStream.d.ts",
   "scripts": {
     "test": "gulp test"
   },

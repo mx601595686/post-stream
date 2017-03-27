@@ -10,8 +10,8 @@ import { serialize, parse } from './Serialize';
 
 class PostStream extends events.EventEmitter {
 
-    private readonly _readable: stream.Readable | stream.Duplex;
-    private readonly _writable: stream.Writable | stream.Duplex;
+    private _readable: stream.Readable | stream.Duplex;
+    private _writable: stream.Writable | stream.Duplex;
 
     private readonly _endFlag = Buffer.from('\r\n«end»');
     private _receivedBody: Buffer;
@@ -20,9 +20,11 @@ class PostStream extends events.EventEmitter {
     private _receivedTitle: string;
     private _new = true; //is new data
     private _mode = 0;  //0: fixed length，1：unfixed length(use _endFlag to finding end)
+    private _queue = Promise.resolve(); // sending queue
 
     constructor(duplex: stream.Duplex);
     constructor(writable: stream.Writable);
+    constructor(readable: stream.Readable, writable?: stream.Writable);
     constructor(readable: stream.Readable | stream.Duplex | stream.Writable, writable?: stream.Writable) {
         super();
 
@@ -62,6 +64,10 @@ class PostStream extends events.EventEmitter {
                 this.emit('end');
             });
 
+            this._readable.once('close', () => {
+                this.emit('close');
+            });
+
             this._readable.once('error', (err) => {
                 this.emit('error', err);
             });
@@ -71,17 +77,21 @@ class PostStream extends events.EventEmitter {
 
         if (this._writable != null) {
             //avoid duplicate registration
-            if (!(this._readable instanceof stream.Duplex)) {
-                this._readable.once('end', () => {
+            if (!(this._writable instanceof stream.Duplex)) {
+                this._writable.once('end', () => {
                     this.emit('end');
                 });
 
-                this._readable.once('error', (err) => {
+                this._writable.once('error', (err) => {
                     this.emit('error', err);
+                });
+
+                this._writable.once('close', () => {
+                    this.emit('close');
                 });
             }
 
-            (<any>this._readable).__PostStreamUsed = true;
+            (<any>this._writable).__PostStreamUsed = true;
         }
     }
 
@@ -131,7 +141,7 @@ class PostStream extends events.EventEmitter {
             if (data.length >= this._remainBodyLength) {
                 this._receivedBody = Buffer.concat([this._receivedBody, data.slice(0, this._remainBodyLength)]);
                 this._new = true;
-                this.emit('data', this._receivedTitle, parse(this._receivedBody));
+                this.emit('data', this._receivedTitle, ...parse(this._receivedBody));
 
                 if (data.length > this._remainBodyLength)
                     this._sortData(data.slice(this._remainBodyLength));
@@ -140,7 +150,7 @@ class PostStream extends events.EventEmitter {
                 this._receivedBody = Buffer.concat([this._receivedBody, data]);
             }
         } else if (this._mode === 1) {
-            const index = data.lastIndexOf(this._endFlag);
+            const index = data.indexOf(this._endFlag);
             if (index === -1) {
                 this._receivedBody = Buffer.concat([this._receivedBody, data]);
             } else {
@@ -157,8 +167,14 @@ class PostStream extends events.EventEmitter {
 
     send(title: string, data: stream.Readable | stream.Duplex): Promise<void>;
     send(title: string, ...data: any[]): Promise<void> {
-        if (this._writable != null) {
+        this._queue = this._send(title, data);
+        return this._queue;
+    }
 
+    async _send(title: string, data: any[]): Promise<void> {
+        if (this._writable != null) {
+            await this._queue;
+            
             const header: Buffer[] = [];
 
             // mode
@@ -187,18 +203,22 @@ class PostStream extends events.EventEmitter {
                 this._writable.write(headerLength);
                 header.forEach(item => this._writable.write(item));
 
-                (<stream.Readable>data[0])
-                    .pipe(this._writable, { end: false })
-                    .once('end', () => {
+                const stream = (<stream.Readable>data[0]);
+                stream.pipe(this._writable, { end: false });
+
+                return new Promise<void>((resolve) => {
+                    stream.once('end', () => {
                         this._writable.write(this._endFlag);
+                        resolve();
                     });
+                });
             } else {
                 const body = serialize(data);
                 const bodyLength = Buffer.alloc(4);
                 bodyLength.writeUInt32BE(body.length, 0);
 
                 const headerLength = Buffer.alloc(4);
-                headerLength.writeUInt32BE(header.reduce((pre, cur) => pre + cur.length, 0) + 4, 0);
+                headerLength.writeUInt32BE(header.reduce((pre, cur) => pre + cur.length, 0) + 4/*bodyLength*/, 0);
                 this._writable.write(headerLength);
                 header.forEach(item => this._writable.write(item));
                 this._writable.write(bodyLength);
@@ -209,10 +229,23 @@ class PostStream extends events.EventEmitter {
                     return new Promise<void>((resolve) => {
                         this._writable.once('drain', resolve);
                     });
+                } else {
+                    return Promise.resolve();
                 }
             }
         }
+    }
 
-        return Promise.resolve();
+    close() {
+        if (this._writable !== undefined) {
+            this._writable.end();
+            this._writable = undefined;
+        }
+        if (this._writable !== undefined) {
+            this._readable.pause();
+            this._readable = undefined;
+        }
     }
 }
+
+export = PostStream;
