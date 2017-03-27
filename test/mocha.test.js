@@ -139,7 +139,7 @@ describe('test data event', function () {
         ps.send('end');
     });
 
-    it.only('test stream', function (done) {
+    it('test stream', function (done) {
         const ps = new PostStream(readable, writable);
         let index = 0;
 
