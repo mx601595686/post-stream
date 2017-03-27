@@ -1,5 +1,11 @@
 import stream = require('stream');
 import events = require('events');
+import { serialize, parse } from './Serialize';
+
+/*
+    data format: headerLength->mode->titleLength->title->?bodyLength->body
+    body format: count->divide[]->item(datatype->data)
+*/
 
 
 class PostStream extends events.EventEmitter {
@@ -8,11 +14,12 @@ class PostStream extends events.EventEmitter {
     private readonly _writable: stream.Writable | stream.Duplex;
 
     private readonly _endFlag = Buffer.from('\r\n«end»');
-    private _receivedTitle: string;
     private _receivedBody: Buffer;
+    private _remainData: Buffer;  //when received data length too short，can`t decode header，the data will be store here
+    private _remainBodyLength = 0;
+    private _receivedTitle: string;
     private _new = true; //is new data
     private _mode = 0;  //0: fixed length，1：unfixed length(use _endFlag to finding end)
-    private _remainBodyLength = 0;
 
     constructor(duplex: stream.Duplex);
     constructor(writable: stream.Writable);
@@ -80,28 +87,51 @@ class PostStream extends events.EventEmitter {
 
     //sort received data
     private _sortData(data: Buffer) {
+        if (this._remainData !== undefined) {
+            data = Buffer.concat([this._remainData, data]);
+        }
+
         if (this._new) {
+            if (data.length < 4) {
+                this._remainData = data;
+                return;
+            }
+
+            const headerLength = data.readUInt32BE(0);
+
+            if (data.length < headerLength) {
+                this._remainData = data;
+                return;
+            } else {
+                this._remainData = undefined;
+            }
+
             this._new = false;
             this._receivedBody = Buffer.alloc(0);
 
-            //data header format: mode->titleLength->title->?bodyLength->body
+            let index = 4;
 
-            this._mode = data.readUInt8(0);
-            const titleLength = data.readUInt16BE(1);
-            this._receivedTitle = data.slice(3, 3 + titleLength).toString();
+            this._mode = data.readUInt8(index++);
+
+            const titleLength = data.readUInt16BE(index);
+            index += 2;
+
+            this._receivedTitle = data.slice(index, index + titleLength).toString();
+            index += titleLength;
+
             if (this._mode === 0) {
-                this._remainBodyLength = data.readUInt32BE(3 + titleLength);
-                data = data.slice((3 + titleLength) + 4);
-            } else if (this._mode === 1) {
-                data = data.slice(3 + titleLength);
+                this._remainBodyLength = data.readUInt32BE(index);
+                index += 4;
             }
+
+            data = data.slice(index);
         }
 
         if (this._mode === 0) {
             if (data.length >= this._remainBodyLength) {
                 this._receivedBody = Buffer.concat([this._receivedBody, data.slice(0, this._remainBodyLength)]);
                 this._new = true;
-                this.emit('data', this._receivedBody, this._receivedTitle);
+                this.emit('data', this._receivedTitle, parse(this._receivedBody));
 
                 if (data.length > this._remainBodyLength)
                     this._sortData(data.slice(this._remainBodyLength));
@@ -116,59 +146,70 @@ class PostStream extends events.EventEmitter {
             } else {
                 this._receivedBody = Buffer.concat([this._receivedBody, data.slice(0, index)]);
                 this._new = true;
-                this.emit('data', this._receivedBody, this._receivedTitle);
+                this.emit('data', this._receivedTitle, this._receivedBody);
 
-                const remain = data.slice(index, this._endFlag.length);
+                const remain = data.slice(index + this._endFlag.length);
                 if (remain.length > 0)
-                    this._sortData(data.slice(this._remainBodyLength));
+                    this._sortData(remain);
             }
         }
     }
 
-
-
-    send(data:any, title?: string): Promise<void> {
+    send(title: string, data: stream.Readable | stream.Duplex): Promise<void>;
+    send(title: string, ...data: any[]): Promise<void> {
         if (this._writable != null) {
 
-            if (data == null) {
-                data = Buffer.alloc(0);
+            const header: Buffer[] = [];
+
+            // mode
+            if (data[0] instanceof stream.Readable) {
+                const mode = Buffer.alloc(1); //mode:1
+                mode.writeUInt8(1, 0);
+                header.push(mode);
+            }
+            else {
+                const mode = Buffer.alloc(1); //mode:0
+                mode.writeUInt8(0, 0);
+                header.push(mode);
             }
 
-            let bufferTitle: Buffer;
-            if (title == null) {
-                bufferTitle = Buffer.alloc(0);
-            } else {
-                bufferTitle = Buffer.from(title);
-            }
+            // title
+            const bufferTitle = Buffer.from(title == null ? '' : title);
+            const titleLength = Buffer.alloc(2);
+            titleLength.writeUInt16BE(bufferTitle.length, 0);
+            header.push(titleLength);
+            header.push(bufferTitle);
 
-            if (data instanceof stream.Readable) {
-                this._writable.write(Buffer.alloc(1).writeUInt8(1, 0));  //mode:1
-                this._writable.write(Buffer.alloc(2).writeUInt16BE(bufferTitle.length, 0));
-                this._writable.write(bufferTitle);
-                <stream.Readable>data
+            // body
+            if (data[0] instanceof stream.Readable) {
+                const headerLength = Buffer.alloc(4);
+                headerLength.writeUInt32BE(header.reduce((pre, cur) => pre + cur.length, 0), 0);
+                this._writable.write(headerLength);
+                header.forEach(item => this._writable.write(item));
+
+                (<stream.Readable>data[0])
                     .pipe(this._writable, { end: false })
                     .once('end', () => {
                         this._writable.write(this._endFlag);
                     });
             } else {
-                this._writable.write(Buffer.alloc(1).writeUInt8(0, 0));  //mode:0
-                this._writable.write(Buffer.alloc(2).writeUInt16BE(bufferTitle.length, 0));
-                this._writable.write(bufferTitle);
+                const body = serialize(data);
+                const bodyLength = Buffer.alloc(4);
+                bodyLength.writeUInt32BE(body.length, 0);
 
-            }
+                const headerLength = Buffer.alloc(4);
+                headerLength.writeUInt32BE(header.reduce((pre, cur) => pre + cur.length, 0) + 4, 0);
+                this._writable.write(headerLength);
+                header.forEach(item => this._writable.write(item));
+                this._writable.write(bodyLength);
 
-            this._writable.write(bufferTitle);
-            this._writable.write(PostStream.titleFlag);
+                const isDrain = this._writable.write(body);
 
-            this._writable.write(data);
-            this._writable.write(PostStream.bodyFlag);
-
-            const isDrain = this._writable.write(PostStream.endFlag);
-
-            if (!isDrain) {
-                return new Promise<void>((resolve) => {
-                    this._writable.once('drain', resolve);
-                });
+                if (!isDrain) {
+                    return new Promise<void>((resolve) => {
+                        this._writable.once('drain', resolve);
+                    });
+                }
             }
         }
 
