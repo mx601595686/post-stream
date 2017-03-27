@@ -204,13 +204,14 @@ class PostStream extends events.EventEmitter {
                 header.forEach(item => this._writable.write(item));
 
                 const stream = (<stream.Readable>data[0]);
-                stream.pipe(this._writable, { end: false });
 
                 return new Promise<void>((resolve) => {
                     stream.once('end', () => {
                         this._writable.write(this._endFlag);
                         resolve();
                     });
+
+                    stream.pipe(this._writable, { end: false });
                 });
             } else {
                 const body = serialize(data);

@@ -237,4 +237,106 @@ describe('test close', function () {
     });
 });
 
+describe.only('test accuracy', function () {
+    this.timeout(10000);
 
+    let readable;
+    let writable;
+    let child;
+
+    beforeEach(function () {
+        child = child_process.spawn(process.execPath, [path.resolve(__dirname, './echo.js')], {
+            stdio: ['pipe', 'pipe', 'pipe']
+        });
+        readable = child.stdout;
+        writable = child.stdin;
+    });
+
+    afterEach(function () {
+        child.kill();
+    });
+
+    it('no order :test basic type and Buffer', function (done) {
+        const ps = new PostStream(readable, writable);
+
+        const testItems = [
+            null,
+            undefined,
+            -11,
+            3.56365,
+            true,
+            false,
+            'test',
+            { 'test': 123456 },
+            [1, 2, { 'test': 123456 }]
+        ];
+
+        ps.on('data', function (title, data) {
+            expect(data).to.be.eql(testItems[title]);
+        });
+
+        for (let i = 0; i < 1000; i++) {
+            const index = Math.floor(Math.random() * testItems.length);
+            ps.send(index + '', testItems[index]);
+        }
+
+        setTimeout(function () {
+            done();
+        }, 2000);
+    });
+
+    it('in order :test basic type and Buffer', async function () {
+        const ps = new PostStream(readable, writable);
+
+        const testItems = [
+            null,
+            undefined,
+            -11,
+            3.56365,
+            true,
+            false,
+            'test',
+            { 'test': 123456 },
+            [1, 2, { 'test': 123456 }]
+        ];
+
+        ps.on('data', function (title, data) {
+            expect(data).to.be.eql(testItems[title]);
+        });
+
+        for (let i = 0; i < 5000; i++) {
+            const index = Math.floor(Math.random() * testItems.length);
+            await ps.send(index + '', testItems[index]);
+        }
+    });
+
+    it('no order :test stream', function (done) {
+        const ps = new PostStream(readable, writable);
+
+        ps.on('data', function (title, data) {
+            expect(title).to.be('stream');
+            expect(data.toString()).to.be('abcdefghijklmn');
+        });
+
+        for (var index = 0; index < 100; index++) {
+            ps.send('stream', fs.createReadStream(path.resolve(__dirname, './testFile.txt')));
+        }
+
+        setTimeout(function () {
+            done();
+        }, 6000);
+    });
+
+    it('in order :test stream', async function () {
+        const ps = new PostStream(readable, writable);
+
+        ps.on('data', function (title, data) {
+            expect(title).to.be('stream');
+            expect(data.toString()).to.be('abcdefghijklmn');
+        });
+
+        for (var index = 0; index < 5000; index++) {
+            await ps.send('stream', fs.createReadStream(path.resolve(__dirname, './testFile.txt')));
+        }
+    });
+});

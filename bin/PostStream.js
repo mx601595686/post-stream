@@ -173,12 +173,12 @@ class PostStream extends events.EventEmitter {
                     this._writable.write(headerLength);
                     header.forEach(item => this._writable.write(item));
                     const stream = data[0];
-                    stream.pipe(this._writable, { end: false });
                     return new Promise((resolve) => {
                         stream.once('end', () => {
                             this._writable.write(this._endFlag);
                             resolve();
                         });
+                        stream.pipe(this._writable, { end: false });
                     });
                 }
                 else {
@@ -204,7 +204,7 @@ class PostStream extends events.EventEmitter {
         });
     }
     close() {
-        this._queue.then(() => {
+        return this._queue.then(() => {
             if (this._writable !== undefined) {
                 this._writable.end();
                 this._writable = undefined;

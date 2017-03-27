@@ -18,6 +18,6 @@ declare class PostStream extends events.EventEmitter {
     private _sortData(data);
     send(title: string, data: stream.Readable | stream.Duplex): Promise<void>;
     _send(title: string, data: any[]): Promise<void>;
-    close(): void;
+    close(): Promise<void>;
 }
 export = PostStream;
