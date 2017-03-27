@@ -84,7 +84,7 @@ describe('test send', function () {
     });
 });
 
-describe('test data event', function () {
+describe('test parse data', function () {
     let readable;
     let writable;
     let child;
@@ -236,3 +236,5 @@ describe('test close', function () {
         }, 1000);
     });
 });
+
+
