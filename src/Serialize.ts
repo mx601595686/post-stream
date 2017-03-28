@@ -4,6 +4,7 @@ const enum dataType {
     number, string, boolean, null, undefined, Object, Buffer
 }
 
+
 export function serialize(data: any[]): Buffer {
     let count = 0;
     let divideIndex = 0;

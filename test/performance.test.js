@@ -27,10 +27,10 @@ describe('compare to child_process ipc', function () {
     describe('number', function () {
         it('child_process ipc', function (done) {
             child.on('message', index => {
-                if (index === 5000)
+                if (index === 1000)
                     done();
             })
-            for (let i = 0; i <= 5000; i++) {
+            for (let i = 0; i <= 1000; i++) {
                 child.send(i);
             }
         });
@@ -39,11 +39,11 @@ describe('compare to child_process ipc', function () {
             const ps = new PostStream(readable, writable);
 
             ps.on('data', (t, index) => {
-                if (index === 5000)
+                if (index === 1000)
                     done();
             })
 
-            for (let i = 0; i <= 5000; i++) {
+            for (let i = 0; i <= 1000; i++) {
                 ps.send('', i);
             }
         })
@@ -52,10 +52,10 @@ describe('compare to child_process ipc', function () {
     describe('string', function () {
         it('child_process ipc', function (done) {
             child.on('message', index => {
-                if (index === '5000')
+                if (index === '1000')
                     done();
             })
-            for (let i = 0; i <= 5000; i++) {
+            for (let i = 0; i <= 1000; i++) {
                 child.send(i + '');
             }
         });
@@ -64,11 +64,11 @@ describe('compare to child_process ipc', function () {
             const ps = new PostStream(readable, writable);
 
             ps.on('data', (t, index) => {
-                if (index === '5000')
+                if (index === '1000')
                     done();
             })
 
-            for (let i = 0; i <= 5000; i++) {
+            for (let i = 0; i <= 1000; i++) {
                 ps.send('', i + '');
             }
         })
@@ -80,10 +80,10 @@ describe('compare to child_process ipc', function () {
             child.on('message', value => {
                 if (value === null)
                     index++;
-                if (index === 5000)
+                if (index === 1000)
                     done();
             })
-            for (let i = 0; i <= 5000; i++) {
+            for (let i = 0; i <= 1000; i++) {
                 child.send(null);
             }
         });
@@ -96,11 +96,11 @@ describe('compare to child_process ipc', function () {
             ps.on('data', (t, value) => {
                 if (value === null)
                     index++;
-                if (index === 5000)
+                if (index === 1000)
                     done();
             })
 
-            for (let i = 0; i <= 5000; i++) {
+            for (let i = 0; i <= 1000; i++) {
                 ps.send('', null);
             }
         })
@@ -109,10 +109,10 @@ describe('compare to child_process ipc', function () {
     describe('object', function () {
         it('child_process ipc', function (done) {
             child.on('message', data => {
-                if (data.index === 3000)
+                if (data.index === 1000)
                     done();
             })
-            for (let i = 0; i <= 3000; i++) {
+            for (let i = 0; i <= 1000; i++) {
                 child.send({ index: i });
             }
         });
@@ -121,11 +121,11 @@ describe('compare to child_process ipc', function () {
             const ps = new PostStream(readable, writable);
 
             ps.on('data', (t, data) => {
-                if (data.index === 3000)
+                if (data.index === 1000)
                     done();
             });
 
-            for (let i = 0; i <= 3000; i++) {
+            for (let i = 0; i <= 1000; i++) {
                 ps.send('', { index: i });
             }
         });

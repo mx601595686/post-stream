@@ -237,8 +237,8 @@ describe('test close', function () {
     });
 });
 
-describe.only('test accuracy', function () {
-    this.timeout(10000);
+describe('test accuracy', function () {
+    this.timeout(30000);
 
     let readable;
     let writable;
@@ -335,7 +335,7 @@ describe.only('test accuracy', function () {
             expect(data.toString()).to.be('abcdefghijklmn');
         });
 
-        for (var index = 0; index < 5000; index++) {
+        for (var index = 0; index < 1000; index++) {
             await ps.send('stream', fs.createReadStream(path.resolve(__dirname, './testFile.txt')));
         }
     });

@@ -154,12 +154,14 @@ class PostStream extends events.EventEmitter {
                 this._receivedBody = Buffer.concat([this._receivedBody, data]);
             } else {
                 this._receivedBody = Buffer.concat([this._receivedBody, data.slice(0, index)]);
+
                 this._new = true;
                 this.emit('data', this._receivedTitle, this._receivedBody);
 
-                const remain = data.slice(index + this._endFlag.length);
-                if (remain.length > 0)
+                if (index + this._endFlag.length < data.length) {
+                    const remain = data.slice(index + this._endFlag.length);
                     this._sortData(remain);
+                }
             }
         }
     }
@@ -175,32 +177,22 @@ class PostStream extends events.EventEmitter {
 
         if (this._writable != null) {
 
-            const header: Buffer[] = [];
-
-            // mode
-            if (data[0] instanceof stream.Readable) {
-                const mode = Buffer.alloc(1); //mode:1
-                mode.writeUInt8(1, 0);
-                header.push(mode);
-            }
-            else {
-                const mode = Buffer.alloc(1); //mode:0
-                mode.writeUInt8(0, 0);
-                header.push(mode);
-            }
+            const header: Buffer[] = [
+                Buffer.alloc(4)/*headerLength*/,
+                Buffer.alloc(1)/*mode*/,
+                Buffer.alloc(2)/*titleLength*/
+                /*title*/
+                /*bodyLength:Buffer.alloc(4)*/
+            ];
 
             // title
-            const bufferTitle = Buffer.from(title == null ? '' : title);
-            const titleLength = Buffer.alloc(2);
-            titleLength.writeUInt16BE(bufferTitle.length, 0);
-            header.push(titleLength);
-            header.push(bufferTitle);
+            header[3] = Buffer.from(title == null ? '' : title);
+            header[2].writeUInt16BE(header[3].length, 0);
 
             // body
             if (data[0] instanceof stream.Readable) {
-                const headerLength = Buffer.alloc(4);
-                headerLength.writeUInt32BE(header.reduce((pre, cur) => pre + cur.length, 0), 0);
-                this._writable.write(headerLength);
+                header[1].writeUInt8(1, 0); //mode: 1
+                header[0].writeUInt32BE(header.reduce((pre, cur) => pre + cur.length, 0), 0);
                 header.forEach(item => this._writable.write(item));
 
                 const stream = (<stream.Readable>data[0]);
@@ -214,15 +206,14 @@ class PostStream extends events.EventEmitter {
                     stream.pipe(this._writable, { end: false });
                 });
             } else {
-                const body = serialize(data);
-                const bodyLength = Buffer.alloc(4);
-                bodyLength.writeUInt32BE(body.length, 0);
+                header[1].writeUInt8(0, 0); //mode: 0
 
-                const headerLength = Buffer.alloc(4);
-                headerLength.writeUInt32BE(header.reduce((pre, cur) => pre + cur.length, 0) + 4/*bodyLength*/, 0);
-                this._writable.write(headerLength);
+                const body = serialize(data);
+                header[4] = Buffer.alloc(4); /*bodyLength*/
+                header[4].writeUInt32BE(body.length, 0);
+
+                header[0].writeUInt32BE(header.reduce((pre, cur) => pre + cur.length, 0), 0);
                 header.forEach(item => this._writable.write(item));
-                this._writable.write(bodyLength);
 
                 const isDrain = this._writable.write(body);
 
