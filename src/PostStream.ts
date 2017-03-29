@@ -208,8 +208,6 @@ class PostStream extends events.EventEmitter {
                     return new Promise<void>((resolve) => {
                         this._writable.once('drain', resolve);
                     });
-                } else {
-                    return Promise.resolve();
                 }
             }
         }

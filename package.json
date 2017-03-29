@@ -1,12 +1,13 @@
 {
   "name": "post-stream",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Send number, string, boolean, null, undefined, object, buffer or stream to a stream efficiently and conveniently.",
   "main": "./bin/PostStream.js",
   "types": "./bin/PostStream.d.ts",
   "scripts": {
     "test": "gulp test"
   },
+  "engines": {"node": ">=7.0.0"},
   "repository": {
     "type": "git",
     "url": "git+https://github.com/mx601595686/post-stream.git"

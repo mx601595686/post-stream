@@ -1,12 +1,4 @@
 "use strict";
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : new P(function (resolve) { resolve(result.value); }).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 const stream = require("stream");
 const events = require("events");
 const Serialize_1 = require("./Serialize");
@@ -134,53 +126,48 @@ class PostStream extends events.EventEmitter {
         this._queue = this._send(title, data);
         return this._queue;
     }
-    _send(title, data) {
-        return __awaiter(this, void 0, void 0, function* () {
-            yield this._queue;
-            if (this._writable != null) {
-                const header = [
-                    Buffer.alloc(4) /*headerLength*/,
-                    Buffer.alloc(1) /*mode*/,
-                    Buffer.alloc(2) /*titleLength*/
-                    /*title*/
-                    /*bodyLength:Buffer.alloc(4)*/
-                ];
-                // title
-                header[3] = Buffer.from(title == null ? '' : title);
-                header[2].writeUInt16BE(header[3].length, 0);
-                // body
-                if (data[0] instanceof stream.Readable) {
-                    header[1].writeUInt8(1, 0); //mode: 1
-                    header[0].writeUInt32BE(header.reduce((pre, cur) => pre + cur.length, 0), 0);
-                    header.forEach(item => this._writable.write(item));
-                    const stream = data[0];
+    async _send(title, data) {
+        await this._queue;
+        if (this._writable != null) {
+            const header = [
+                Buffer.alloc(4) /*headerLength*/,
+                Buffer.alloc(1) /*mode*/,
+                Buffer.alloc(2) /*titleLength*/
+                /*title*/
+                /*bodyLength:Buffer.alloc(4)*/
+            ];
+            // title
+            header[3] = Buffer.from(title == null ? '' : title);
+            header[2].writeUInt16BE(header[3].length, 0);
+            // body
+            if (data[0] instanceof stream.Readable) {
+                header[1].writeUInt8(1, 0); //mode: 1
+                header[0].writeUInt32BE(header.reduce((pre, cur) => pre + cur.length, 0), 0);
+                header.forEach(item => this._writable.write(item));
+                const stream = data[0];
+                return new Promise((resolve) => {
+                    stream.once('end', () => {
+                        this._writable.write(this._endFlag);
+                        resolve();
+                    });
+                    stream.pipe(this._writable, { end: false });
+                });
+            }
+            else {
+                header[1].writeUInt8(0, 0); //mode: 0
+                const body = Serialize_1.serialize(data);
+                header[4] = Buffer.alloc(4); /*bodyLength*/
+                header[4].writeUInt32BE(body.length, 0);
+                header[0].writeUInt32BE(header.reduce((pre, cur) => pre + cur.length, 0), 0);
+                header.forEach(item => this._writable.write(item));
+                const isDrain = this._writable.write(body);
+                if (!isDrain) {
                     return new Promise((resolve) => {
-                        stream.once('end', () => {
-                            this._writable.write(this._endFlag);
-                            resolve();
-                        });
-                        stream.pipe(this._writable, { end: false });
+                        this._writable.once('drain', resolve);
                     });
                 }
-                else {
-                    header[1].writeUInt8(0, 0); //mode: 0
-                    const body = Serialize_1.serialize(data);
-                    header[4] = Buffer.alloc(4); /*bodyLength*/
-                    header[4].writeUInt32BE(body.length, 0);
-                    header[0].writeUInt32BE(header.reduce((pre, cur) => pre + cur.length, 0), 0);
-                    header.forEach(item => this._writable.write(item));
-                    const isDrain = this._writable.write(body);
-                    if (!isDrain) {
-                        return new Promise((resolve) => {
-                            this._writable.once('drain', resolve);
-                        });
-                    }
-                    else {
-                        return Promise.resolve();
-                    }
-                }
             }
-        });
+        }
     }
     close() {
         return this._queue.then(() => {
