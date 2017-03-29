@@ -19,7 +19,7 @@ gulp.task("compile", function () {
 
 //mocha test
 gulp.task('test', () =>
-    gulp.src('test/**/*.test.js')
+    gulp.src('test/*.test.js')
         .pipe(mocha({}))
         .once('error', () => {
             process.exit(1);
@@ -30,7 +30,7 @@ gulp.task('test', () =>
 );
 
 gulp.task('test-debug', () =>
-    gulp.src('test/**/*.test.js')
+    gulp.src('test/*.test.js')
         .pipe(mocha({
             debugBrk: 'debug'
         }))
