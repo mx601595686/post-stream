@@ -21,11 +21,19 @@ class PostStream extends events.EventEmitter {
     private _mode = 0;  //0: fixed length，1：unfixed length(use _endFlag to finding end)
     private _queue = Promise.resolve(); // sending queue
 
-    constructor(duplex: stream.Duplex);
-    constructor(writable: stream.Writable);
-    constructor(readable: stream.Readable, writable?: stream.Writable);
-    constructor(readable: stream.Readable | stream.Duplex | stream.Writable, writable?: stream.Writable) {
+    constructor(readable: stream.Readable | void, writable?: stream.Writable | void) {
         super();
+
+        if (readable != null) {
+            if ((<any>readable).__PostStreamUsed === true)
+                throw new Error('stream has been used by PostStream');
+
+            if (readable instanceof stream.Readable) {
+                this._readable = readable;
+            } else {
+                throw new Error('argument is not a stream');
+            }
+        }
 
         if (writable != null) {
             if ((<any>writable).__PostStreamUsed === true)
@@ -35,22 +43,6 @@ class PostStream extends events.EventEmitter {
                 this._writable = writable;
             } else {
                 throw new Error('second argument is not a writable stream');
-            }
-        }
-
-        if (readable != null) {
-            if ((<any>readable).__PostStreamUsed === true)
-                throw new Error('stream has been used by PostStream');
-
-            if (readable instanceof stream.Readable) {
-                this._readable = readable;
-            } else if (readable instanceof stream.Duplex) {
-                this._readable = readable;
-                this._writable = readable;
-            } else if (readable instanceof stream.Writable) {
-                this._writable = readable;
-            } else {
-                throw new Error('argument is not a stream');
             }
         }
 
@@ -69,26 +61,21 @@ class PostStream extends events.EventEmitter {
 
             this._readable.once('error', (err) => {
                 this.emit('error', err);
+                this.close();
             });
 
             (<any>this._readable).__PostStreamUsed = true;
         }
 
         if (this._writable != null) {
-            //avoid duplicate registration
-            if (!(this._writable instanceof stream.Duplex)) {
-                this._writable.once('end', () => {
-                    this.emit('end');
-                });
+            this._writable.once('error', (err) => {
+                this.emit('error', err);
+                this.close();
+            });
 
-                this._writable.once('error', (err) => {
-                    this.emit('error', err);
-                });
-
-                this._writable.once('close', () => {
-                    this.emit('close');
-                });
-            }
+            this._writable.once('close', () => {
+                this.emit('close');
+            });
 
             (<any>this._writable).__PostStreamUsed = true;
         }

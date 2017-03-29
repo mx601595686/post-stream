@@ -13,7 +13,7 @@ describe('test construction', function () {
 
     it('use writable', function () {
         const write = new stream.Writable();
-        const ps = new PostStream(write);
+        const ps = new PostStream(null, write);
     });
 
     it('use readable and writable', function () {
@@ -24,14 +24,14 @@ describe('test construction', function () {
 
     it('use duplex', function () {
         const duplex = new stream.Duplex();
-        const ps = new PostStream(duplex);
+        const ps = new PostStream(duplex, duplex);
     });
 
     it('multi times creation', function () {
         const duplex = new stream.Duplex();
-        const ps = new PostStream(duplex);
+        const ps = new PostStream(duplex, duplex);
         expect(function () {
-            const ps2 = new PostStream(duplex);
+            const ps2 = new PostStream(duplex, duplex);
         }).to.throwException((err) => {
             expect(err.message).to.be('stream has been used by PostStream');
         });
@@ -63,7 +63,7 @@ describe('test send', function () {
     });
 
     it('use writable', function () {
-        const ps = new PostStream(writable);
+        const ps = new PostStream(null, writable);
         ps.send();
         ps.send('test');
         ps.send('test', 123);
@@ -71,13 +71,6 @@ describe('test send', function () {
 
     it('use readable and writable', function () {
         const ps = new PostStream(readable, writable);
-        ps.send();
-        ps.send('test');
-        ps.send('test', 123);
-    });
-
-    it('use duplex', function () {
-        const ps = new PostStream(child.stdio[3]);
         ps.send();
         ps.send('test');
         ps.send('test', 123);
