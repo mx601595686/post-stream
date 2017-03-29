@@ -1,7 +1,10 @@
 # post-stream
 Send number, string, boolean, null, undefined, object, buffer or stream to a stream efficiently and conveniently.
 
+`npm install --save post-stream`
+
 ---
+
 ## API
 
 ### Constructor
