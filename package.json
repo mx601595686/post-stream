@@ -1,6 +1,6 @@
 {
   "name": "post-stream",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "Send number, string, boolean, null, undefined, object, buffer or stream to a stream efficiently and conveniently.",
   "main": "./bin/PostStream.js",
   "types": "./bin/PostStream.d.ts",

@@ -12,7 +12,7 @@ declare class PostStream extends events.EventEmitter {
     private _new;
     private _mode;
     private _queue;
-    constructor(readable: stream.Readable | void, writable?: stream.Writable | void);
+    constructor(readable: stream.Readable, writable?: stream.Writable);
     private _sortData(data);
     send(title: string, data: stream.Readable | stream.Duplex): Promise<void>;
     _send(title: string, data: any[]): Promise<void>;

@@ -21,7 +21,7 @@ class PostStream extends events.EventEmitter {
     private _mode = 0;  //0: fixed length，1：unfixed length(use _endFlag to finding end)
     private _queue = Promise.resolve(); // sending queue
 
-    constructor(readable: stream.Readable | void, writable?: stream.Writable | void) {
+    constructor(readable: stream.Readable, writable?: stream.Writable) {
         super();
 
         if (readable != null) {

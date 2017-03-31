@@ -14,7 +14,7 @@ Send number, string, boolean, null, undefined, object, buffer or stream to a str
 new PostStream(readableStream);
 
 //Create a stream controler, it can only send data
-new PostStream(null, writableStream);
+new PostStream(undefined, writableStream);
 
 //Create a stream controler, it can send and receive data
 new PostStream(readableStream, writableStream);
