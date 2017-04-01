@@ -115,7 +115,7 @@ describe('test parse data', function () {
                 case 4:
                     expect(title).to.be('test2');
                     expect(Buffer.from('ttt').equals(data.pop())).to.be.ok();
-                    expect(data).to.be.eql(['a', 1, 3.5, true, null, undefined, { name: 'test' }]);
+                    expect(data).to.be.eql(['a', 1, 3.5, true, null, undefined, {name: 'test'}]);
                     break;
                 default:
                     expect(title).to.be('end');
@@ -128,7 +128,7 @@ describe('test parse data', function () {
         ps.send();
         ps.send('test');
         ps.send('test', 123);
-        ps.send('test2', 'a', 1, 3.5, true, null, undefined, { name: 'test' }, Buffer.from('ttt'));
+        ps.send('test2', 'a', 1, 3.5, true, null, undefined, {name: 'test'}, Buffer.from('ttt'));
         ps.send('end');
     });
 
@@ -197,7 +197,7 @@ describe('test close', function () {
         ps.send('test');
         ps.send('test', 123);
         ps.close();
-        ps.send('test2', 'a', 1, 3.5, true, null, undefined, { name: 'test' }, Buffer.from('ttt'));
+        ps.send('test2', 'a', 1, 3.5, true, null, undefined, {name: 'test'}, Buffer.from('ttt'));
         ps.send('end');
 
         setTimeout(function () {
@@ -260,8 +260,8 @@ describe('test accuracy', function () {
             true,
             false,
             'test',
-            { 'test': 123456 },
-            [1, 2, { 'test': 123456 }]
+            {'test': 123456},
+            [1, 2, {'test': 123456}]
         ];
 
         ps.on('data', function (title, data) {
@@ -289,8 +289,8 @@ describe('test accuracy', function () {
             true,
             false,
             'test',
-            { 'test': 123456 },
-            [1, 2, { 'test': 123456 }]
+            {'test': 123456},
+            [1, 2, {'test': 123456}]
         ];
 
         ps.on('data', function (title, data) {
@@ -331,5 +331,44 @@ describe('test accuracy', function () {
         for (var index = 0; index < 1000; index++) {
             await ps.send('stream', fs.createReadStream(path.resolve(__dirname, './testFile.txt')));
         }
+    });
+});
+
+describe('test don`t auto parse data', function () {
+    let readable;
+    let writable;
+    let child;
+
+    beforeEach(function () {
+        child = child_process.spawn(process.execPath, [path.resolve(__dirname, './echo.js')], {
+            stdio: ['pipe', 'pipe', 'pipe']
+        });
+        readable = child.stdout;
+        writable = child.stdin;
+    });
+
+    afterEach(function () {
+        child.kill();
+    });
+
+    it('don`t parse Data', function (done) {
+        const ps = new PostStream(readable, writable);
+        ps.parseData = false;
+        ps.data.on('original', data => {
+            expect(Buffer.isBuffer(data)).to.be.ok();
+            data = PostStream.parse(data);
+            expect(data[0]).to.be('hello');
+            done();
+        });
+        ps.send('original', 'hello');
+    });
+
+    it('send serialized data', function (done) {
+        const ps = new PostStream(readable, writable);
+        ps.data.on('original', data => {
+            expect(data).to.be('hello');
+            done();
+        });
+        ps.sendSerializedData('original', PostStream.serialize(['hello']));
     });
 });

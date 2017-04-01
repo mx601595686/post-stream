@@ -1,13 +1,11 @@
 {
   "name": "post-stream",
-  "version": "0.1.3",
+  "version": "0.1.5",
   "description": "Send number, string, boolean, null, undefined, object, buffer or stream to a stream efficiently and conveniently.",
   "main": "./bin/PostStream.js",
-  "types": "./bin/PostStream.d.ts",
-  "scripts": {
-    "test": "gulp test"
+  "engines": {
+    "node": ">=7.0.0"
   },
-  "engines": {"node": ">=7.0.0"},
   "repository": {
     "type": "git",
     "url": "git+https://github.com/mx601595686/post-stream.git"
@@ -27,15 +25,12 @@
   },
   "homepage": "https://github.com/mx601595686/post-stream#readme",
   "devDependencies": {
-    "@types/expect.js": "^0.3.29",
-    "@types/mocha": "^2.2.40",
-    "@types/node": "^7.0.7",
+    "babel-plugin-transform-class-properties": "^6.23.0",
     "expect.js": "^0.3.1",
     "gulp": "^3.9.1",
+    "gulp-babel": "^6.1.2",
     "gulp-sourcemaps": "^2.4.1",
     "gulp-spawn-mocha": "^3.1.0",
-    "gulp-typescript": "^3.1.5",
-    "mocha": "^3.2.0",
-    "typescript": "^2.2.1"
+    "mocha": "^3.2.0"
   }
 }
