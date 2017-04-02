@@ -206,6 +206,9 @@ module.exports = (_temp = _class = class PostStream extends events {
 
     close() {
         return this._queue.then(() => {
+            this.removeAllListeners();
+            this.data.removeAllListeners();
+
             if (this._writable !== undefined) {
                 this._writable.end();
                 this._writable = undefined;

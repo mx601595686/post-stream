@@ -169,9 +169,8 @@ describe('test close', function () {
         child.kill();
     });
 
-    it('test basic type and Buffer', function (done) {
+    it('test basic type and Buffer', async function () {
         const ps = new PostStream(readable, writable);
-        let index = 1;
 
         ps.on('data', function (title, ...data) {
             switch (index++) {
@@ -193,20 +192,15 @@ describe('test close', function () {
             }
         });
 
-        ps.send();
-        ps.send('test');
-        ps.send('test', 123);
-        ps.close();
-        ps.send('test2', 'a', 1, 3.5, true, null, undefined, {name: 'test'}, Buffer.from('ttt'));
-        ps.send('end');
-
-        setTimeout(function () {
-            expect(index).to.be.above(1);
-            done();
-        }, 1000);
+        await ps.send();
+        await ps.send('test');
+        await ps.send('test', 123);
+        await ps.close();
+        await ps.send('test2', 'a', 1, 3.5, true, null, undefined, {name: 'test'}, Buffer.from('ttt'));
+        await ps.send('end');
     });
 
-    it('test stream', function (done) {
+    it('test stream', function () {
         const ps = new PostStream(readable, writable);
         let index = 1;
 
@@ -223,10 +217,6 @@ describe('test close', function () {
         ps.close();
         ps.send('stream', fs.createReadStream(path.resolve(__dirname, './testFile.txt')));
         ps.send('stream', fs.createReadStream(path.resolve(__dirname, './testFile.txt')));
-        setTimeout(function () {
-            expect(index).to.be.above(1);
-            done();
-        }, 1000);
     });
 });
 
