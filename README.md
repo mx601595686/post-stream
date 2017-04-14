@@ -122,3 +122,34 @@ This will be triggered when the be controled readableStream trigger close event.
 
 This will be triggered when the be controled readableStream or writableStream trigger error event.
 
+### Attention
+If you want to use `pipe` to communicate with child process, you would better use two pipe instead of one.
+Because of don`t know why child send data to parent will lost one data fragment.(this is not this package`s problem)
+
+```javascript
+//parent
+
+const child_process = require('child_process');
+const path = require('path');
+const PostStream = require('post-stream');
+const child = child_process.spawn(process.execPath, [path.resolve('./child.js')], {
+    stdio: ['pipe', 'pipe', 'pipe', 'pipe', 'pipe']
+});
+const ps = new PostStream(child.stdio[3], child.stdio[4]);
+ps.data.on('main', data => {
+    console.log('main:', data)
+});
+ps.send('child',123);
+```
+```javascript
+//child
+const fs = require('fs');
+const PostStream = require('post-stream');
+
+let read = fs.createReadStream(null,{fd:4});
+let write = fs.createWriteStream(null,{fd:3});
+const ps = new PostStream(read, write);
+ps.data.on('child', data => {
+    ps.send('main', data);
+});
+```
