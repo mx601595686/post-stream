@@ -123,7 +123,7 @@ This will be triggered when the be controled readableStream trigger close event.
 This will be triggered when the be controled readableStream or writableStream trigger error event.
 
 ### Attention
-If you want to use `pipe` to communicate with child process, you would better use two pipe instead of one.
+If you want to use `pipe` to communicate with child process, you would better use two `pipe` instead of one.
 Because of don\`t know why child send data to parent will lost one data fragment.(this is not this package\`s problem)
 
 ```javascript
