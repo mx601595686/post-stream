@@ -36,7 +36,7 @@ describe('compare to child_process ipc', function () {
         });
 
         it('PostStream', function (done) {
-            const ps = new PostStream(readable, writable);
+            const ps = new PostStream({readable, writable});
 
             ps.on('data', (t, index) => {
                 if (index === 1000)
@@ -61,7 +61,7 @@ describe('compare to child_process ipc', function () {
         });
 
         it('PostStream', function (done) {
-            const ps = new PostStream(readable, writable);
+            const ps = new PostStream({readable, writable});
 
             ps.on('data', (t, index) => {
                 if (index === '1000')
@@ -89,7 +89,7 @@ describe('compare to child_process ipc', function () {
         });
 
         it('PostStream', function (done) {
-            const ps = new PostStream(readable, writable);
+            const ps = new PostStream({readable, writable});
 
             var index = 0;
 
@@ -118,7 +118,7 @@ describe('compare to child_process ipc', function () {
         });
 
         it('PostStream', function (done) {
-            const ps = new PostStream(readable, writable);
+            const ps = new PostStream({readable, writable});
 
             ps.on('data', (t, data) => {
                 if (data.index === 1000)

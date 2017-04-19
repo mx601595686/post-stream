@@ -8,12 +8,14 @@ const child = child_process.spawn(process.execPath, [path.resolve(__dirname, './
     stdio: ['inherit', 'inherit', 'inherit', 'pipe']
 });
 
-const ps = new PostStream(child.stdio[3], child.stdio[3]);
+const ps = new PostStream({
+    duplex:child.stdio[3]
+});
 
 (async function () {
     await ps.send('start');
 
-    for (var index = 0; index < 500000; index++) {
+    for (var index = 0; index < 10000; index++) {
         await ps.send('index', index);
     }
 

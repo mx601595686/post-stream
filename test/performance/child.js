@@ -9,7 +9,7 @@ const duplex = new net.Socket({
     writable: true
 });
 
-const ps = new PostStream(duplex, duplex);
+const ps = new PostStream({duplex});
 
 let index = 0;
 

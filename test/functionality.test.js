@@ -5,35 +5,37 @@ const child_process = require('child_process');
 const path = require('path');
 const fs = require('fs');
 
+process.on('unhandledRejection',err => console.error(err));
+
 describe('test construction', function () {
     it('use readable', function () {
-        const read = new stream.Readable();
-        const ps = new PostStream(read);
+        const readable = new stream.Readable();
+        const ps = new PostStream({readable});
     });
 
     it('use writable', function () {
-        const write = new stream.Writable();
-        const ps = new PostStream(null, write);
+        const writable = new stream.Writable();
+        const ps = new PostStream({writable});
     });
 
     it('use readable and writable', function () {
-        const read = new stream.Readable();
-        const write = new stream.Writable();
-        const ps = new PostStream(read, write);
+        const readable = new stream.Readable();
+        const writable = new stream.Writable();
+        const ps = new PostStream({readable, writable});
     });
 
     it('use duplex', function () {
         const duplex = new stream.Duplex();
-        const ps = new PostStream(duplex, duplex);
+        const ps = new PostStream({duplex});
     });
 
     it('multi times creation', function () {
         const duplex = new stream.Duplex();
-        const ps = new PostStream(duplex, duplex);
+        const ps = new PostStream({duplex});
         expect(function () {
-            const ps2 = new PostStream(duplex, duplex);
+            const ps2 = new PostStream({duplex});
         }).to.throwException((err) => {
-            expect(err.message).to.be('stream has been used by PostStream');
+            expect(err.message).to.be('readable stream has been used by PostStream');
         });
     });
 });
@@ -55,22 +57,26 @@ describe('test send', function () {
         child.kill();
     });
 
-    it('use readable', function () {
-        const ps = new PostStream(readable);
-        ps.send();
-        ps.send('test');
-        ps.send('test', 123);
+    it('use readable', function (done) {
+        const ps = new PostStream({readable});
+        try{
+            ps.send();
+            ps.send('test');
+            ps.send('test', 123);
+        }catch (e){
+            done();
+        }
     });
 
-    it('use writable', function () {
-        const ps = new PostStream(null, writable);
-        ps.send();
-        ps.send('test');
-        ps.send('test', 123);
+    it('use writable', async function () {
+        const ps = new PostStream({writable});
+        await ps.send();
+        await ps.send('test');
+        await ps.send('test', 123);
     });
 
     it('use readable and writable', function () {
-        const ps = new PostStream(readable, writable);
+        const ps = new PostStream({readable, writable});
         ps.send();
         ps.send('test');
         ps.send('test', 123);
@@ -95,7 +101,7 @@ describe('test parse data', function () {
     });
 
     it('test basic type and Buffer', function (done) {
-        const ps = new PostStream(readable, writable);
+        const ps = new PostStream({readable, writable});
         let index = 1;
 
         ps.on('data', function (title, ...data) {
@@ -133,7 +139,7 @@ describe('test parse data', function () {
     });
 
     it('test stream', function (done) {
-        const ps = new PostStream(readable, writable);
+        const ps = new PostStream({readable, writable});
         let index = 0;
 
         ps.on('data', function (title, data) {
@@ -170,7 +176,8 @@ describe('test close', function () {
     });
 
     it('test basic type and Buffer', async function () {
-        const ps = new PostStream(readable, writable);
+        const ps = new PostStream({readable, writable});
+        let index = 1;
 
         ps.on('data', function (title, ...data) {
             switch (index++) {
@@ -200,8 +207,8 @@ describe('test close', function () {
         await ps.send('end');
     });
 
-    it('test stream', function () {
-        const ps = new PostStream(readable, writable);
+    it('test stream', async function () {
+        const ps = new PostStream({readable, writable});
         let index = 1;
 
         ps.on('data', function (title, data) {
@@ -211,12 +218,12 @@ describe('test close', function () {
                 throw new Error('close() is no effect');
         });
 
-        ps.send('stream', fs.createReadStream(path.resolve(__dirname, './testFile.txt')));
-        ps.send('stream', fs.createReadStream(path.resolve(__dirname, './testFile.txt')));
-        ps.send('stream', fs.createReadStream(path.resolve(__dirname, './testFile.txt')));
-        ps.close();
-        ps.send('stream', fs.createReadStream(path.resolve(__dirname, './testFile.txt')));
-        ps.send('stream', fs.createReadStream(path.resolve(__dirname, './testFile.txt')));
+        await ps.send('stream', fs.createReadStream(path.resolve(__dirname, './testFile.txt')));
+        await ps.send('stream', fs.createReadStream(path.resolve(__dirname, './testFile.txt')));
+        await ps.send('stream', fs.createReadStream(path.resolve(__dirname, './testFile.txt')));
+        await ps.close();
+        await ps.send('stream', fs.createReadStream(path.resolve(__dirname, './testFile.txt')));
+        await ps.send('stream', fs.createReadStream(path.resolve(__dirname, './testFile.txt')));
     });
 });
 
@@ -240,7 +247,7 @@ describe('test accuracy', function () {
     });
 
     it('no order :test basic type and Buffer', function (done) {
-        const ps = new PostStream(readable, writable);
+        const ps = new PostStream({readable, writable});
 
         const testItems = [
             null,
@@ -269,7 +276,7 @@ describe('test accuracy', function () {
     });
 
     it('in order :test basic type and Buffer', async function () {
-        const ps = new PostStream(readable, writable);
+        const ps = new PostStream({readable, writable});
 
         const testItems = [
             null,
@@ -294,7 +301,7 @@ describe('test accuracy', function () {
     });
 
     it('no order :test stream', function (done) {
-        const ps = new PostStream(readable, writable);
+        const ps = new PostStream({readable, writable});
 
         ps.on('data', function (title, data) {
             expect(title).to.be('stream');
@@ -311,7 +318,7 @@ describe('test accuracy', function () {
     });
 
     it('in order :test stream', async function () {
-        const ps = new PostStream(readable, writable);
+        const ps = new PostStream({readable, writable});
 
         ps.on('data', function (title, data) {
             expect(title).to.be('stream');
@@ -342,7 +349,7 @@ describe('test don`t auto parse data', function () {
     });
 
     it('don`t parse Data', function (done) {
-        const ps = new PostStream(readable, writable);
+        const ps = new PostStream({readable, writable});
         ps.parseData = false;
         ps.data.on('original', data => {
             expect(Buffer.isBuffer(data)).to.be.ok();
@@ -354,7 +361,7 @@ describe('test don`t auto parse data', function () {
     });
 
     it('send serialized data', function (done) {
-        const ps = new PostStream(readable, writable);
+        const ps = new PostStream({readable, writable});
         ps.data.on('original', data => {
             expect(data).to.be('hello');
             done();
