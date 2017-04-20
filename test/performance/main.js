@@ -21,3 +21,4 @@ const ps = new PostStream({
 
     await ps.send('end');
 })()
+//10000 : 337.422ms

@@ -71,8 +71,13 @@ module.exports = (_temp = _class = class PostStream extends EventEmiter {
                     case 0:
                         {
                             if (this.parseData) {
-                                this.emit('data', title, ...parse(receivedBody));
-                                this.data.emit(title, ...parse(receivedBody));
+                                try {
+                                    let data = parse(receivedBody);
+                                    this.emit('data', title, ...data);
+                                    this.data.emit(title, ...data);
+                                } catch (e) {
+                                    this.emit('error', e);
+                                }
                             } else {
                                 this.emit('data', title, receivedBody);
                                 this.data.emit(title, receivedBody);
@@ -94,11 +99,11 @@ module.exports = (_temp = _class = class PostStream extends EventEmiter {
 
         if (writable != null) {
             if (writable.__PostStreamUsed !== true) {
-                writable.once('error', err => {
+                writable.on('error', err => {
                     this.emit('error', err);
                 });
 
-                writable.once('close', () => {
+                writable.on('close', () => {
                     this.emit('close');
                 });
             }

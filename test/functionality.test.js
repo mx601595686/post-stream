@@ -60,7 +60,6 @@ describe('test send', function () {
     it('use readable', function (done) {
         const ps = new PostStream({readable});
         try{
-            ps.send();
             ps.send('test');
             ps.send('test', 123);
         }catch (e){
@@ -70,14 +69,12 @@ describe('test send', function () {
 
     it('use writable', async function () {
         const ps = new PostStream({writable});
-        await ps.send();
         await ps.send('test');
         await ps.send('test', 123);
     });
 
     it('use readable and writable', function () {
         const ps = new PostStream({readable, writable});
-        ps.send();
         ps.send('test');
         ps.send('test', 123);
     });
@@ -105,11 +102,7 @@ describe('test parse data', function () {
         let index = 1;
 
         ps.on('data', function (title, ...data) {
-            switch (index++) {
-                case 1:
-                    expect(title).to.be('');
-                    expect(data[0]).to.be(undefined);
-                    break;
+            switch (++index) {
                 case 2:
                     expect(title).to.be('test');
                     expect(data[0]).to.be(undefined);
@@ -125,13 +118,12 @@ describe('test parse data', function () {
                     break;
                 default:
                     expect(title).to.be('end');
-                    expect(index).to.be(6);
+                    expect(index).to.be(5);
                     done();
                     break;
             }
         });
 
-        ps.send();
         ps.send('test');
         ps.send('test', 123);
         ps.send('test2', 'a', 1, 3.5, true, null, undefined, {name: 'test'}, Buffer.from('ttt'));
@@ -180,11 +172,7 @@ describe('test close', function () {
         let index = 1;
 
         ps.on('data', function (title, ...data) {
-            switch (index++) {
-                case 1:
-                    expect(title).to.be('');
-                    expect(data[0]).to.be(undefined);
-                    break;
+            switch (++index) {
                 case 2:
                     expect(title).to.be('test');
                     expect(data[0]).to.be(undefined);
@@ -199,7 +187,6 @@ describe('test close', function () {
             }
         });
 
-        await ps.send();
         await ps.send('test');
         await ps.send('test', 123);
         await ps.close();

@@ -1,5 +1,5 @@
 # post-stream
-Send number, string, boolean, null, undefined, object, buffer or stream to a stream efficiently and conveniently.
+Efficiently and conveniently send number, string, boolean, null, undefined, object, buffer or stream to a stream.
 
 `npm install --save post-stream`
 
@@ -10,14 +10,13 @@ Send number, string, boolean, null, undefined, object, buffer or stream to a str
 ### Constructor
 
 ```javascript
-//Create a stream controler, it can only receive data
-new PostStream(readableStream);
-
-//Create a stream controler, it can only send data
-new PostStream(undefined, writableStream);
-
-//Create a stream controler, it can send and receive data
-new PostStream(readableStream, writableStream);
+//Create a stream controler
+new PostStream({
+    readable, //readable stream
+    writable, //writable stream
+    duplex,   //duplex stream
+    maxSize   //data fragment max byte size, default 16MB
+});
 ```
 
 ### StaticClassProperty
@@ -26,7 +25,7 @@ new PostStream(readableStream, writableStream);
 Serilize data. Pass a array, item type can be number, string, boolean, null, undefined, object or buffer.
 
 ##### `parse(data: Buffer): Array`
-Parse data. Pass a serialized data.
+Parse data. Pass a has been serialized buffer.
 
 ### ClassProperty
 
@@ -34,17 +33,17 @@ Parse data. Pass a serialized data.
 This is a `EventEmiter`. Received data`s title is event name.
 
 ```javascript
-const ps = new PostStream(readableStream, writableStream);
-ps.data.once('test', function(data){ });
+const ps = new PostStream({readable, writable});
+ps.data.once('test', function(data){ data === 123 });
 await ps.send('test', 123);
 ```
 
 ##### `parseData: boolean`
 Parse received data. Default is true. If you set false,
- then you need use `PostStream.parse` to parse  every received data.
+ then you need use `PostStream.parse` to parse every received data.
 
 ```javascript
-const ps = new PostStream(readableStream, writableStream);
+const ps = new PostStream({readable, writable});
 ps.parseData = false;
 ps.data.once('test', function(data){
     const parsed = PostStream.parse(data); //return array
@@ -59,7 +58,7 @@ await ps.send('test', 123);
 Send number, string, boolean, null, undefined, object or buffer to stream. 
 The first argument must be a string, it is used for description the data. After that you can pass zero or more data as arguments. If a argument is object or array，it will be serialized( use JSON.stringify ). If you want send a buffer, don`t put it in object or array. This function will return a promise object.
 ```javascript
-const ps = new PostStream(readableStream, writableStream);
+const ps = new PostStream({readable, writable});
 await ps.send('test');
 await ps.send('test1', 123);
 await ps.send('test2', 'string', 1, 3.5, true, null, undefined, { name: 'test' }, [1,2,3], Buffer.from('ttt'));
@@ -72,7 +71,7 @@ await ps.send('test2', 'string', 1, 3.5, true, null, undefined, { name: 'test' }
 Send a stream`s data to stream. You can only pass one stream as first argument. Other arguments will be ignore. Receiver side will receive a buffer, data comes from the send stream. This function will return a promise object.
 
 ```javascript
-const ps = new PostStream(readableStream, writableStream);
+const ps = new PostStream({readable, writable});
 await ps.send('stream', fs.createReadStream('./testFile.txt'));
 await ps.send('stream', fs.createReadStream('./testFile2.txt'));
 ```
@@ -83,7 +82,7 @@ await ps.send('stream', fs.createReadStream('./testFile2.txt'));
 Directly send using `PostStream.serialize` serialized data.
 
 ```javascript
-const ps = new PostStream(readableStream, writableStream);
+const ps = new PostStream({readable, writable});
 await ps.sendSerializedData('original', PostStream.serialize(['hello']));
 ```
 
@@ -92,10 +91,10 @@ await ps.sendSerializedData('original', PostStream.serialize(['hello']));
 
 `close(): Promise<void>`
 
-Close readableStream and writableStream.
+Close readable stream and writable stream.
 
 ```javascript
-const ps = new PostStream(readableStream, writableStream);
+const ps = new PostStream({readable, writable});
 await ps.close();
 ```
 
@@ -120,7 +119,7 @@ This will be triggered when the be controled readableStream trigger close event.
 
 ##### `'error'`
 
-This will be triggered when the be controled readableStream or writableStream trigger error event.
+This will be triggered when the be controled readableStream or writableStream trigger error event or parse data error.
 
 ### Attention
 If you want to use `pipe` to communicate with child process, you would better use two `pipe` instead of one.
@@ -135,7 +134,7 @@ const PostStream = require('post-stream');
 const child = child_process.spawn(process.execPath, [path.resolve('./child.js')], {
     stdio: ['pipe', 'pipe', 'pipe', 'pipe', 'pipe']
 });
-const ps = new PostStream(child.stdio[3], child.stdio[4]);
+const ps = new PostStream({readable:child.stdio[3], writable:child.stdio[4]});
 ps.data.on('main', data => {
     console.log('main:', data)
 });
@@ -146,9 +145,9 @@ ps.send('child',123);
 const fs = require('fs');
 const PostStream = require('post-stream');
 
-let read = fs.createReadStream(null,{fd:4});
-let write = fs.createWriteStream(null,{fd:3});
-const ps = new PostStream(read, write);
+let readable = fs.createReadStream(null,{fd:4});
+let writable = fs.createWriteStream(null,{fd:3});
+const ps = new PostStream({readable, writable});
 ps.data.on('child', data => {
     ps.send('main', data);
 });

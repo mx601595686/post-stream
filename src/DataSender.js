@@ -24,6 +24,9 @@ module.exports = class DataSender {
     }
 
     send(title, buffer, stream) {
+        if ('string' !== typeof title)
+            throw new Error('title is not string');
+
         this._queue = this._send(title, buffer, stream);
         return this._queue;
     }
@@ -58,8 +61,12 @@ module.exports = class DataSender {
     }
 
     close() {
-        return this._queue.then(() => {
+        this._queue = (async () => {
+            await this._queue;
+            this._writableStream.end();
             this._writableStream = undefined;
-        });
+        })();
+
+        return this._queue;
     }
 };

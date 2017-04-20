@@ -70,12 +70,11 @@ exports.DataSpliter = class DataSpliter extends EventEmiter {
 
     _getHeader() {
         if (this._receivedHeader === undefined) {
-            const data = this._receivedFragment;
-            const result = DataHeader.parse(data);
+            const result = DataHeader.parse(this._receivedFragment);
 
             if (result) {
                 if (result.mode === 0 && result.bodyLength > this.maxSize)
-                    return this._clean(data);
+                    return this._clean(this._receivedFragment);
 
                 this._receivedHeader = result;
             } else

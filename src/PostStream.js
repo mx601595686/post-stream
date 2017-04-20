@@ -82,8 +82,13 @@ module.exports = class PostStream extends EventEmiter {
                 switch (mode) {
                     case 0: {
                         if (this.parseData) {
-                            this.emit('data', title, ...parse(receivedBody));
-                            this.data.emit(title, ...parse(receivedBody));
+                            try {
+                                let data = parse(receivedBody);
+                                this.emit('data', title, ...data);
+                                this.data.emit(title, ...data);
+                            } catch (e) {
+                                this.emit('error', e);
+                            }
                         } else {
                             this.emit('data', title, receivedBody);
                             this.data.emit(title, receivedBody);
@@ -104,11 +109,11 @@ module.exports = class PostStream extends EventEmiter {
 
         if (writable != null) {
             if (writable.__PostStreamUsed !== true) {
-                writable.once('error', (err) => {
+                writable.on('error', (err) => {
                     this.emit('error', err);
                 });
 
-                writable.once('close', () => {
+                writable.on('close', () => {
                     this.emit('close');
                 });
             }
@@ -125,8 +130,8 @@ module.exports = class PostStream extends EventEmiter {
      * @returns {Promise.<void>}
      */
     send(title, ...data) {
-        if(data[0] instanceof stream.Readable)
-            return this._dataSender.send(title, undefined,data[0]);
+        if (data[0] instanceof stream.Readable)
+            return this._dataSender.send(title, undefined, data[0]);
         else
             return this._dataSender.send(title, serialize(data));
     }

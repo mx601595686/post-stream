@@ -10,7 +10,7 @@ exports.toBuffer = function (mode, title, body) {
     let _bodyLength = Buffer.alloc(4);
 
     _mode.writeUInt8(mode, 0);
-    _title = Buffer.from(title == null ? '' : title + '');
+    _title = Buffer.from(title);
     _titleLength.writeUInt16BE(_title.length, 0);
 
     if (body !== undefined) _bodyLength.writeUInt32BE(body.length, 0);
