@@ -68,7 +68,7 @@ await ps.send('test2', 'string', 1, 3.5, true, null, undefined, { name: 'test' }
 
 ##### `send(title: string, data: stream.Readable | stream.Duplex): Promise<void>;`
 
-Send a stream`s data to stream. You can only pass one stream as first argument. Other arguments will be ignore. Receiver side will receive a buffer, data comes from the send stream. This function will return a promise object.
+Send a stream`s data to stream. You can only pass one stream as second argument. Other arguments will be ignore. Receiver side will receive a buffer, data comes from the send stream. This function will return a promise object.
 
 ```javascript
 const ps = new PostStream({readable, writable});
@@ -111,15 +111,15 @@ ps.on('data', function (title, data1, data2[, ...data3]) { });
 
 ##### `'end'`
 
-This will be triggered when the be controled readableStream trigger end event.
+This will be triggered when the be controled stream trigger end event.
 
 ##### `'close'`
 
-This will be triggered when the be controled readableStream trigger close event.
+This will be triggered when the be controled stream trigger close event.
 
 ##### `'error'`
 
-This will be triggered when the be controled readableStream or writableStream trigger error event or parse data error.
+This will be triggered when the be controled stream trigger error event or when parsing data error.
 
 ### Attention
 If you want to use `pipe` to communicate with child process, you would better use two `pipe` instead of one.
@@ -131,6 +131,7 @@ Because of don\`t know why child send data to parent will lost one data fragment
 const child_process = require('child_process');
 const path = require('path');
 const PostStream = require('post-stream');
+
 const child = child_process.spawn(process.execPath, [path.resolve('./child.js')], {
     stdio: ['pipe', 'pipe', 'pipe', 'pipe', 'pipe']
 });
