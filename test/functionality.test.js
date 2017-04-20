@@ -5,7 +5,7 @@ const child_process = require('child_process');
 const path = require('path');
 const fs = require('fs');
 
-process.on('unhandledRejection', err => console.error(err));
+process.on('unhandledRejection', err => console.error('promise:', err));
 
 describe('test construction', function () {
     it('use readable', function () {
@@ -79,12 +79,10 @@ describe('test send', function () {
     it('maxSize', function (done) {
         const ps = new PostStream({writable, maxSize: 1024});
         ps.send('test');
-        try {
-            ps.send('test', Buffer.alloc(1024 * 1024))
-        } catch (e) {
+        ps.send('test', Buffer.alloc(1024 * 1024)).catch(e => {
             expect(e.message).to.be('send data length greater than maxSize');
             done();
-        }
+        });
     });
 });
 
@@ -204,7 +202,7 @@ describe('test close', function () {
         setTimeout(function () {
             expect(index).to.be(3);
             done();
-        },1500);
+        }, 1500);
     });
 
     it('test stream', function (done) {
@@ -228,7 +226,7 @@ describe('test close', function () {
         setTimeout(function () {
             expect(index).to.be(4);
             done();
-        },1500);
+        }, 1500);
     });
 });
 
