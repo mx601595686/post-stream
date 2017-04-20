@@ -32,9 +32,9 @@ module.exports = class DataSender {
     }
 
     async _send(title, buffer, stream) {
-        if (this._writableStream === undefined) return;
-
         await this._queue;
+
+        if (this._writableStream === undefined) return;
         if (stream !== undefined) { //mode: 1
             this._writableStream.write(startFlag);
             this._writableStream.write(DataHeader.toBuffer(1, title));
@@ -48,6 +48,9 @@ module.exports = class DataSender {
                 stream.pipe(this._writableStream, {end: false});
             });
         } else { //mode: 0
+            if (buffer.length > this.maxSize)
+                throw new Error('send data length greater than maxSize');
+
             this._writableStream.write(startFlag);
             this._writableStream.write(DataHeader.toBuffer(0, title, buffer));
             const isDrain = this._writableStream.write(buffer);
@@ -63,6 +66,8 @@ module.exports = class DataSender {
     close() {
         this._queue = (async () => {
             await this._queue;
+
+            if (this._writableStream === undefined) return;
             this._writableStream.end();
             this._writableStream = undefined;
         })();

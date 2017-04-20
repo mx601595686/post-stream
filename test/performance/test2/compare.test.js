@@ -1,4 +1,4 @@
-const PostStream = require('..');
+const PostStream = require('../../..');
 const stream = require('stream');
 const expect = require('expect.js');
 const child_process = require('child_process');

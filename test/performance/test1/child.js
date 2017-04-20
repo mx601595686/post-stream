@@ -1,4 +1,4 @@
-const PostStream = require('../../');
+const PostStream = require('../../../bin/PostStream');
 const net = require('net');
 
 console.log(`child is pid ${process.pid}`);

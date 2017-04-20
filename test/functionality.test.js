@@ -5,7 +5,7 @@ const child_process = require('child_process');
 const path = require('path');
 const fs = require('fs');
 
-process.on('unhandledRejection',err => console.error(err));
+process.on('unhandledRejection', err => console.error(err));
 
 describe('test construction', function () {
     it('use readable', function () {
@@ -59,12 +59,9 @@ describe('test send', function () {
 
     it('use readable', function (done) {
         const ps = new PostStream({readable});
-        try{
-            ps.send('test');
-            ps.send('test', 123);
-        }catch (e){
+        expect(ps.send.bind(ps)).to.throwException(e => {
             done();
-        }
+        });
     });
 
     it('use writable', async function () {
@@ -77,6 +74,17 @@ describe('test send', function () {
         const ps = new PostStream({readable, writable});
         ps.send('test');
         ps.send('test', 123);
+    });
+
+    it('maxSize', function (done) {
+        const ps = new PostStream({writable, maxSize: 1024});
+        ps.send('test');
+        try {
+            ps.send('test', Buffer.alloc(1024 * 1024))
+        } catch (e) {
+            expect(e.message).to.be('send data length greater than maxSize');
+            done();
+        }
     });
 });
 
@@ -167,7 +175,7 @@ describe('test close', function () {
         child.kill();
     });
 
-    it('test basic type and Buffer', async function () {
+    it('test basic type and Buffer', function (done) {
         const ps = new PostStream({readable, writable});
         let index = 1;
 
@@ -187,14 +195,19 @@ describe('test close', function () {
             }
         });
 
-        await ps.send('test');
-        await ps.send('test', 123);
-        await ps.close();
-        await ps.send('test2', 'a', 1, 3.5, true, null, undefined, {name: 'test'}, Buffer.from('ttt'));
-        await ps.send('end');
+        ps.send('test');
+        ps.send('test', 123);
+        ps._dataSender.close();
+        ps.send('test2', 'a', 1, 3.5, true, null, undefined, {name: 'test'}, Buffer.from('ttt'));
+        ps.send('end');
+
+        setTimeout(function () {
+            expect(index).to.be(3);
+            done();
+        },1500);
     });
 
-    it('test stream', async function () {
+    it('test stream', function (done) {
         const ps = new PostStream({readable, writable});
         let index = 1;
 
@@ -205,12 +218,17 @@ describe('test close', function () {
                 throw new Error('close() is no effect');
         });
 
-        await ps.send('stream', fs.createReadStream(path.resolve(__dirname, './testFile.txt')));
-        await ps.send('stream', fs.createReadStream(path.resolve(__dirname, './testFile.txt')));
-        await ps.send('stream', fs.createReadStream(path.resolve(__dirname, './testFile.txt')));
-        await ps.close();
-        await ps.send('stream', fs.createReadStream(path.resolve(__dirname, './testFile.txt')));
-        await ps.send('stream', fs.createReadStream(path.resolve(__dirname, './testFile.txt')));
+        ps.send('stream', fs.createReadStream(path.resolve(__dirname, './testFile.txt')));
+        ps.send('stream', fs.createReadStream(path.resolve(__dirname, './testFile.txt')));
+        ps.send('stream', fs.createReadStream(path.resolve(__dirname, './testFile.txt')));
+        ps._dataSender.close();
+        ps.send('stream', fs.createReadStream(path.resolve(__dirname, './testFile.txt')));
+        ps.send('stream', fs.createReadStream(path.resolve(__dirname, './testFile.txt')));
+
+        setTimeout(function () {
+            expect(index).to.be(4);
+            done();
+        },1500);
     });
 });
 

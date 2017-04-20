@@ -11,13 +11,16 @@ Efficiently and conveniently send number, string, boolean, null, undefined, obje
 
 ```javascript
 //Create a stream controler
-new PostStream({
-    readable, //readable stream
-    writable, //writable stream
-    duplex,   //duplex stream
-    maxSize   //data fragment max byte size, default 16MB
-});
+new PostStream(config);
 ```
+
+`config`:
+* `readable` readable stream
+* `writable` writable stream
+* `duplex` duplex stream (such as tcp socket)
+* `maxSize` data fragment max byte size, default 16MB.
+If when sending data greater than `maxSize` will throw a error.
+If when receiving data greater than `maxSize` ,this data will be discard.
 
 ### StaticClassProperty
 

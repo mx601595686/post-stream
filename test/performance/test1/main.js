@@ -1,4 +1,4 @@
-const PostStream = require('../../');
+const PostStream = require('../../..');
 const child_process = require('child_process');
 const path = require('path');
 
@@ -20,5 +20,6 @@ const ps = new PostStream({
     }
 
     await ps.send('end');
-})()
+})();
+
 //10000 : 337.422ms
