@@ -12,14 +12,12 @@ const ps = new PostStream({
     duplex:child.stdio[3]
 });
 
-(async function () {
-    await ps.send('start');
+ps.send('start');
 
-    for (var index = 0; index < 10000; index++) {
-        await ps.send('index', index);
-    }
+for (let index = 0; index < 10000; index++) {
+    ps.send('index', index);
+}
 
-    await ps.send('end');
-})();
+ps.send('end');
 
-//10000 : 337.422ms
+//10000 : 296.853ms
